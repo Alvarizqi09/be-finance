@@ -1,0 +1,4 @@
+/.env
+/expenses.xlsx
+/incomes.xlsx
+/node_modules
