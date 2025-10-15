@@ -29,9 +29,16 @@ router.post("/upload-image", upload.single("image"), async (req, res) => {
       { resource_type: "image", folder: "be-finance-profile" },
       (error, result) => {
         if (error) {
-          return res.status(500).json({ message: "Cloudinary upload error", error });
+          return res
+            .status(500)
+            .json({ message: "Cloudinary upload error", error });
         }
-        res.status(200).json({ imageUrl: result.secure_url, message: "Image uploaded successfully" });
+        res
+          .status(200)
+          .json({
+            imageUrl: result.secure_url,
+            message: "Image uploaded successfully",
+          });
       }
     );
     result.end(req.file.buffer);
