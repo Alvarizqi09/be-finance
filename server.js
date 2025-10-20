@@ -15,7 +15,11 @@ const dashboardRoutes = require("./routes/dashboardRoutes");
 
 app.use(
   cors({
-    origin: ["https://letsstack-it.vercel.app", process.env.CLIENT_URL || "*"],
+    origin: [
+      "https://letsstack-it.vercel.app",
+      "http://localhost:5173",
+      process.env.CLIENT_URL,
+    ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
