@@ -15,7 +15,7 @@ const dashboardRoutes = require("./routes/dashboardRoutes");
 
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "*",
+    origin: ["https://financeapp.vercel.app", process.env.CLIENT_URL || "*"],
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
