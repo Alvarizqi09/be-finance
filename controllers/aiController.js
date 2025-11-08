@@ -87,33 +87,28 @@ ${thisMonthExpenses
     const MODEL_NAME = "gemini-2.0-flash";
     const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${GEMINI_API_KEY}`;
 
-    const systemPrompt = `You are a helpful financial assistant with access to the user's financial data. You help users with:
-- Budgeting advice based on their actual income and expenses
-- Expense tracking tips
-- Income management strategies
-- Financial planning guidance based on their current balance
-- Saving and investment basics
+    const systemPrompt = `ANDA ADALAH ASISTEN KEUANGAN YANG SANGAT KETAT. IKUTI ATURAN INI DENGAN TEPAT:
 
-**CRITICAL FORMATTING RULES:**
-1. Use **bold** for important terms, categories, and amounts by wrapping text with **
-2. Use *italic* for emphasis and secondary information by wrapping text with *
-3. Use bullet points with • for lists
-4. NEVER repeat words or phrases consecutively
-5. NEVER duplicate amounts like "Rp 233Rp 233" - use only "Rp 233"
-6. NEVER duplicate headings like "Evaluasi Pengeluaran:Evaluasi Pengeluaran:" - use only once
-7. Keep your responses concise, friendly, and actionable
-8. Use Indonesian Rupiah (Rp) format when mentioning amounts
-9. Avoid redundant information and repetition
+**ATURAN MUTLAK (JANGAN PERNAH LANGGAR):**
+1. JANGAN PERNAH mengulang kata, frasa, atau angka secara berurutan
+2. JANGAN PERNAH menulis "Rp 233Rp 233" - tulis HANYA "Rp 233"
+3. JANGAN PERNAH menulis "Evaluasi Pengeluaran:Evaluasi Pengeluaran:" - tulis HANYA "Evaluasi Pengeluaran:"
+4. JANGAN PERNAH menduplikasi konten apa pun
+5. Gunakan format yang konsisten dengan bullet points (•)
 
-**IMPORTANT: If you notice any duplication in your response, fix it before sending.**
+**FORMATTING:**
+- Gunakan **tebal** untuk istilah penting dan kategori
+- Gunakan *miring* untuk penekanan 
+- Gunakan • untuk list
+- Format Rupiah: Rp [angka]
 
-Example of CORRECT formatting:
-• **Evaluasi Pengeluaran:** Pengeluaran terbesarmu bulan ini adalah *Kesehatan* (**Rp 233**). Coba telaah, apakah pengeluaran ini bisa dikurangi?
+**CONTOH FORMAT YANG BENAR:**
+• **Evaluasi Pengeluaran:** Pengeluaran terbesarmu bulan ini adalah *Kesehatan* (**Rp 233**). Coba evaluasi apakah bisa dikurangi.
 
-Example of INCORRECT formatting (DO NOT DO THIS):
-• **Evaluasi Pengeluaran:Evaluasi Pengeluaran:** Pengeluaran terbesarmu bulan ini adalah *Kesehatan* (**Rp 233Rp 233**). Coba telaah, apakah pengeluaran ini bisa dikurangi?
+**CONTOH FORMAT YANG SALAH (JANGAN LAKUKAN INI):**
+• Evaluasi Pengeluaran:Evaluasi Pengeluaran: Pengeluaran terbesarmu bulan ini adalah Kesehatan (Rp 233Rp 233).
 
-When asked about their financial data (income, expenses, balance, etc.), provide specific information from their actual data.`;
+Berdasarkan data keuangan user, berikan tips yang spesifik, jelas, dan bebas duplikasi.`;
 
     const response = await fetch(GEMINI_API_URL, {
       method: "POST",
@@ -125,16 +120,16 @@ When asked about their financial data (income, expenses, balance, etc.), provide
           {
             parts: [
               {
-                text: `${systemPrompt}\n\n${financialContext}\n\nUser question: ${message}\n\nRemember: No duplication, be concise and clear.`,
+                text: `ATURAN: ${systemPrompt}\n\nDATA KEUANGAN USER:\n${financialContext}\n\nPERTANYAAN USER: ${message}\n\nINGAT: TIDAK ADA DUPLIKASI, JELAS, DAN SPESIFIK.`,
               },
             ],
           },
         ],
         generationConfig: {
-          temperature: 0.5, // Lower temperature untuk mengurangi kreativitas berlebihan
-          maxOutputTokens: 800,
-          topP: 0.8,
-          topK: 40,
+          temperature: 0.3, // Sangat rendah untuk mengurangi kreativitas
+          maxOutputTokens: 600,
+          topP: 0.7,
+          topK: 30,
         },
       }),
     });
@@ -150,10 +145,10 @@ When asked about their financial data (income, expenses, balance, etc.), provide
     const data = await response.json();
     let botResponse =
       data.candidates?.[0]?.content?.parts?.[0]?.text ||
-      "I apologize, but I couldn't process that request. Please try again.";
+      "Maaf, saya tidak bisa memproses permintaan tersebut. Silakan coba lagi.";
 
-    // Enhanced cleaning function
-    botResponse = cleanAIResponse(botResponse);
+    // Enhanced cleaning with multiple passes
+    botResponse = aggressiveCleanAIResponse(botResponse);
 
     res.json({ response: botResponse });
   } catch (error) {
@@ -165,39 +160,71 @@ When asked about their financial data (income, expenses, balance, etc.), provide
   }
 };
 
-// Enhanced cleaning function for AI responses
-const cleanAIResponse = (text) => {
+// Ultra-aggressive cleaning function
+const aggressiveCleanAIResponse = (text) => {
   if (!text) return text;
 
   let cleaned = text;
 
-  // Fix duplicate phrases with colon (Evaluasi Pengeluaran:Evaluasi Pengeluaran:)
-  cleaned = cleaned.replace(/([A-Za-z\s]+):\1:/g, "$1:");
-  cleaned = cleaned.replace(/([A-Za-z\s]+):\s*\1:/g, "$1:");
+  // Multiple cleaning passes
+  for (let i = 0; i < 3; i++) {
+    // Fix duplicate phrases with colon (the main problem)
+    cleaned = cleaned.replace(/([A-Za-z\u00C0-\u024F\s]+):\s*\1:/g, "$1:");
+    cleaned = cleaned.replace(/([A-Za-z\u00C0-\u024F\s]+):\1/g, "$1:");
 
-  // Fix duplicate words (Evaluasi Evaluasi -> Evaluasi)
-  cleaned = cleaned.replace(/\b(\w+)\s+\1\b/gi, "$1");
+    // Fix duplicate words (any language)
+    cleaned = cleaned.replace(/([\w\u00C0-\u024F]+)\s+\1/gi, "$1");
 
-  // Fix duplicate currency amounts (Rp 233Rp 233 -> Rp 233)
-  cleaned = cleaned.replace(/(Rp\s*\d+(?:\.\d{3})*(?:,\d{2})?)\s*\1/gi, "$1");
+    // Fix duplicate currency amounts (Rp 233Rp 233 -> Rp 233)
+    cleaned = cleaned.replace(/(Rp\s*[\d.,]+)\s*\1/gi, "$1");
 
-  // Fix duplicate amounts without Rp (233233 -> 233)
-  cleaned = cleaned.replace(/(\b\d+\b)\s*\1/gi, "$1");
+    // Fix duplicate numbers (233233 -> 233)
+    cleaned = cleaned.replace(/(\b[\d,]+\b)\s*\1/gi, "$1");
 
-  // Fix formatting issues
+    // Fix specific patterns from your example
+    cleaned = cleaned.replace(
+      /Evaluasi Pengeluaran:\s*Evaluasi Pengeluaran:/g,
+      "Evaluasi Pengeluaran:"
+    );
+    cleaned = cleaned.replace(
+      /Tingkatkan Pendapatan:\s*Tingkatkan Pendapatan:/g,
+      "Tingkatkan Pendapatan:"
+    );
+    cleaned = cleaned.replace(
+      /Prioritaskan Pembayaran:\s*Prioritaskan Pembayaran:/g,
+      "Prioritaskan Pembayaran:"
+    );
+    cleaned = cleaned.replace(
+      /Buat Anggaran:\s*Buat Anggaran:/g,
+      "Buat Anggaran:"
+    );
+    cleaned = cleaned.replace(
+      /Lacak Pengeluaran:\s*Lacak Pengeluaran:/g,
+      "Lacak Pengeluaran:"
+    );
+    cleaned = cleaned.replace(
+      /Dana Darurat:\s*Dana Darurat:/g,
+      "Dana Darurat:"
+    );
+    cleaned = cleaned.replace(/Investasi:\s*Investasi:/g, "Investasi:");
+
+    // Fix Rp duplication
+    cleaned = cleaned.replace(/Rp\s*89Rp\s*89/g, "Rp 89");
+    cleaned = cleaned.replace(/Rp\s*233Rp\s*233/g, "Rp 233");
+    cleaned = cleaned.replace(/Rp\s*144Rp\s*144/g, "Rp 144");
+
+    // Remove extra spaces and trim
+    cleaned = cleaned.replace(/\s+/g, " ").trim();
+  }
+
+  // Final formatting cleanup
   cleaned = cleaned
-    .replace(/\*\*\*/g, "**") // Fix triple asterisks
-    .replace(/\*\*/g, "**") // Ensure proper bold formatting
-    .replace(/\*(?!\*)/g, "*") // Ensure proper italic formatting
-    .replace(/\s+/g, " ") // Remove extra spaces
-    .trim();
-
-  // Additional cleanup for specific patterns
-  cleaned = cleaned
-    .replace(/(\w+):\s*\1\s*:/g, "$1:") // Fix pattern: "word: word :"
-    .replace(/(\b\w+\b)\s*:\s*\1/g, "$1") // Fix pattern: "word : word"
-    .replace(/(Rp\s*)\s+/g, "$1") // Remove extra spaces after Rp
-    .replace(/(\d)\s+(\d)/g, "$1$2"); // Fix space in numbers
+    .replace(/\*\*\*/g, "**")
+    .replace(/\*\*/g, "**")
+    .replace(/\*(?!\*)/g, "*")
+    .replace(/(\d)\s+(\d)/g, "$1$2")
+    .replace(/\(\s*/g, "(")
+    .replace(/\s*\)/g, ")");
 
   return cleaned;
 };
