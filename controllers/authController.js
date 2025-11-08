@@ -54,13 +54,26 @@ exports.loginUser = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
 exports.getUserInfo = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password");
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    res.status(200).json({ user });
+    // Format createdAt ke waktu Indonesia
+    const createdAtIndo = new Date(user.createdAt).toLocaleString("id-ID", {
+      timeZone: "Asia/Jakarta",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+    res
+      .status(200)
+      .json({ user: { ...user.toObject(), createdAt: createdAtIndo } });
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }
