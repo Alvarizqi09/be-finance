@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { chatWithAI } = require("../controllers/aiController");
+const { protect } = require("../middleware/authMiddleware");
 const rateLimit = require("express-rate-limit");
 
 const aiLimiter = rateLimit({
@@ -9,6 +10,6 @@ const aiLimiter = rateLimit({
   message: "Too many AI requests, please try again later.",
 });
 
-router.post("/chat", aiLimiter, chatWithAI);
+router.post("/chat", protect, aiLimiter, chatWithAI);
 
 module.exports = router;
