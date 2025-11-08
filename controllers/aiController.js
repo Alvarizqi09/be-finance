@@ -94,16 +94,24 @@ ${thisMonthExpenses
 - Financial planning guidance based on their current balance
 - Saving and investment basics
 
-**IMPORTANT FORMATTING INSTRUCTIONS:**
-- Use **bold** for important terms, categories, and amounts by wrapping text with **
-- Use *italic* for emphasis and secondary information by wrapping text with *
-- Use bullet points with • for lists
-- NEVER use ** or * without proper formatting
-- Keep your responses concise, friendly, and actionable
-- Use Indonesian Rupiah (Rp) format when mentioning amounts
+**CRITICAL FORMATTING RULES:**
+1. Use **bold** for important terms, categories, and amounts by wrapping text with **
+2. Use *italic* for emphasis and secondary information by wrapping text with *
+3. Use bullet points with • for lists
+4. NEVER repeat words or phrases consecutively
+5. NEVER duplicate amounts like "Rp 233Rp 233" - use only "Rp 233"
+6. NEVER duplicate headings like "Evaluasi Pengeluaran:Evaluasi Pengeluaran:" - use only once
+7. Keep your responses concise, friendly, and actionable
+8. Use Indonesian Rupiah (Rp) format when mentioning amounts
+9. Avoid redundant information and repetition
 
-Example formatting:
+**IMPORTANT: If you notice any duplication in your response, fix it before sending.**
+
+Example of CORRECT formatting:
 • **Evaluasi Pengeluaran:** Pengeluaran terbesarmu bulan ini adalah *Kesehatan* (**Rp 233**). Coba telaah, apakah pengeluaran ini bisa dikurangi?
+
+Example of INCORRECT formatting (DO NOT DO THIS):
+• **Evaluasi Pengeluaran:Evaluasi Pengeluaran:** Pengeluaran terbesarmu bulan ini adalah *Kesehatan* (**Rp 233Rp 233**). Coba telaah, apakah pengeluaran ini bisa dikurangi?
 
 When asked about their financial data (income, expenses, balance, etc.), provide specific information from their actual data.`;
 
@@ -117,13 +125,13 @@ When asked about their financial data (income, expenses, balance, etc.), provide
           {
             parts: [
               {
-                text: `${systemPrompt}\n\n${financialContext}\n\nUser question: ${message}`,
+                text: `${systemPrompt}\n\n${financialContext}\n\nUser question: ${message}\n\nRemember: No duplication, be concise and clear.`,
               },
             ],
           },
         ],
         generationConfig: {
-          temperature: 0.7,
+          temperature: 0.5, // Lower temperature untuk mengurangi kreativitas berlebihan
           maxOutputTokens: 800,
           topP: 0.8,
           topK: 40,
@@ -144,11 +152,8 @@ When asked about their financial data (income, expenses, balance, etc.), provide
       data.candidates?.[0]?.content?.parts?.[0]?.text ||
       "I apologize, but I couldn't process that request. Please try again.";
 
-    // Clean up any improper formatting
-    botResponse = botResponse
-      .replace(/\*\*\*/g, "**") // Fix triple asterisks
-      .replace(/\*\*/g, "**") // Ensure proper bold formatting
-      .replace(/\*(?!\*)/g, "*"); // Ensure proper italic formatting
+    // Enhanced cleaning function
+    botResponse = cleanAIResponse(botResponse);
 
     res.json({ response: botResponse });
   } catch (error) {
@@ -158,6 +163,43 @@ When asked about their financial data (income, expenses, balance, etc.), provide
       message: error.message,
     });
   }
+};
+
+// Enhanced cleaning function for AI responses
+const cleanAIResponse = (text) => {
+  if (!text) return text;
+
+  let cleaned = text;
+
+  // Fix duplicate phrases with colon (Evaluasi Pengeluaran:Evaluasi Pengeluaran:)
+  cleaned = cleaned.replace(/([A-Za-z\s]+):\1:/g, "$1:");
+  cleaned = cleaned.replace(/([A-Za-z\s]+):\s*\1:/g, "$1:");
+
+  // Fix duplicate words (Evaluasi Evaluasi -> Evaluasi)
+  cleaned = cleaned.replace(/\b(\w+)\s+\1\b/gi, "$1");
+
+  // Fix duplicate currency amounts (Rp 233Rp 233 -> Rp 233)
+  cleaned = cleaned.replace(/(Rp\s*\d+(?:\.\d{3})*(?:,\d{2})?)\s*\1/gi, "$1");
+
+  // Fix duplicate amounts without Rp (233233 -> 233)
+  cleaned = cleaned.replace(/(\b\d+\b)\s*\1/gi, "$1");
+
+  // Fix formatting issues
+  cleaned = cleaned
+    .replace(/\*\*\*/g, "**") // Fix triple asterisks
+    .replace(/\*\*/g, "**") // Ensure proper bold formatting
+    .replace(/\*(?!\*)/g, "*") // Ensure proper italic formatting
+    .replace(/\s+/g, " ") // Remove extra spaces
+    .trim();
+
+  // Additional cleanup for specific patterns
+  cleaned = cleaned
+    .replace(/(\w+):\s*\1\s*:/g, "$1:") // Fix pattern: "word: word :"
+    .replace(/(\b\w+\b)\s*:\s*\1/g, "$1") // Fix pattern: "word : word"
+    .replace(/(Rp\s*)\s+/g, "$1") // Remove extra spaces after Rp
+    .replace(/(\d)\s+(\d)/g, "$1$2"); // Fix space in numbers
+
+  return cleaned;
 };
 
 module.exports = { chatWithAI };
