@@ -1,8 +1,6 @@
 const express = require("express");
 const router = express.Router();
 const { chatWithAI } = require("../controllers/aiController");
-const auth = require("../middleware/auth"); // optional, jika ingin authenticated
-
 const rateLimit = require("express-rate-limit");
 
 const aiLimiter = rateLimit({
@@ -11,7 +9,6 @@ const aiLimiter = rateLimit({
   message: "Too many AI requests, please try again later.",
 });
 
-router.post("/chat", aiLimiter, auth, chatWithAI);
-router.post("/chat", auth, chatWithAI); // hapus auth jika ingin public
+router.post("/chat", aiLimiter, chatWithAI);
 
 module.exports = router;
