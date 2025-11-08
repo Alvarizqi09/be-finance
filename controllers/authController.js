@@ -26,9 +26,22 @@ exports.registerUser = async (req, res) => {
       password,
       profileImageUrl,
     });
+    const createdAtIndo = new Date(user.createdAt).toLocaleString("id-ID", {
+      timeZone: "Asia/Jakarta",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
     res
       .status(201)
-      .json({ id: user._id, user, token: generateToken(user._id) });
+      .json({
+        id: user._id,
+        user: { ...user.toObject(), createdAt: createdAtIndo },
+        token: generateToken(user._id),
+      });
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }
@@ -47,9 +60,22 @@ exports.loginUser = async (req, res) => {
     if (!user || !(await user.comparePassword(password))) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
+    const createdAtIndo = new Date(user.createdAt).toLocaleString("id-ID", {
+      timeZone: "Asia/Jakarta",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
     res
       .status(200)
-      .json({ id: user._id, user, token: generateToken(user._id) });
+      .json({
+        id: user._id,
+        user: { ...user.toObject(), createdAt: createdAtIndo },
+        token: generateToken(user._id),
+      });
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }
