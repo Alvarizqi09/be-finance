@@ -1,3 +1,4 @@
+// controllers/aiController.js
 const Income = require("../models/Income");
 const Expense = require("../models/Expense");
 
@@ -93,8 +94,18 @@ ${thisMonthExpenses
 - Financial planning guidance based on their current balance
 - Saving and investment basics
 
-When asked about their financial data (income, expenses, balance, etc.), provide specific information from their actual data.
-Keep your responses concise, friendly, and actionable. Use Indonesian Rupiah (Rp) format when mentioning amounts.`;
+**IMPORTANT FORMATTING INSTRUCTIONS:**
+- Use **bold** for important terms, categories, and amounts by wrapping text with **
+- Use *italic* for emphasis and secondary information by wrapping text with *
+- Use bullet points with • for lists
+- NEVER use ** or * without proper formatting
+- Keep your responses concise, friendly, and actionable
+- Use Indonesian Rupiah (Rp) format when mentioning amounts
+
+Example formatting:
+• **Evaluasi Pengeluaran:** Pengeluaran terbesarmu bulan ini adalah *Kesehatan* (**Rp 233**). Coba telaah, apakah pengeluaran ini bisa dikurangi?
+
+When asked about their financial data (income, expenses, balance, etc.), provide specific information from their actual data.`;
 
     const response = await fetch(GEMINI_API_URL, {
       method: "POST",
@@ -129,9 +140,15 @@ Keep your responses concise, friendly, and actionable. Use Indonesian Rupiah (Rp
     }
 
     const data = await response.json();
-    const botResponse =
+    let botResponse =
       data.candidates?.[0]?.content?.parts?.[0]?.text ||
       "I apologize, but I couldn't process that request. Please try again.";
+
+    // Clean up any improper formatting
+    botResponse = botResponse
+      .replace(/\*\*\*/g, "**") // Fix triple asterisks
+      .replace(/\*\*/g, "**") // Ensure proper bold formatting
+      .replace(/\*(?!\*)/g, "*"); // Ensure proper italic formatting
 
     res.json({ response: botResponse });
   } catch (error) {
