@@ -2,9 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 
-// create the Express app instance
 const app = express();
-
 const path = require("path");
 
 const connectDB = require("./config/db");
@@ -12,6 +10,7 @@ const authRoutes = require("./routes/authRoutes");
 const incomeRoutes = require("./routes/incomeRoutes");
 const expenseRoutes = require("./routes/expenseRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
+const aiRoutes = require("./routes/aiRoutes"); // TAMBAHKAN INI
 
 app.use(
   cors({
@@ -35,6 +34,7 @@ app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/income", incomeRoutes);
 app.use("/api/v1/expense", expenseRoutes);
 app.use("/api/v1/dashboard", dashboardRoutes);
+app.use("/api/v1/ai", aiRoutes); // TAMBAHKAN INI
 
 app.get("/", (req, res) => {
   res.json({ message: "Server is running" });
