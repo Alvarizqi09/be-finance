@@ -90,21 +90,17 @@ ${thisMonthExpenses
     const systemPrompt = `Kamu adalah asisten keuangan yang membantu. Berikan tips yang jelas dan praktis.
 
 ATURAN FORMATTING (WAJIB DIIKUTI):
-1. HANYA gunakan **bold** untuk kategori/judul penting
-2. JANGAN PERNAH gunakan italic (*text*) atau _text_
-3. Setiap bullet point HARUS dipisah dengan line break (enter)
-4. Gunakan bullet point (•) untuk list
-5. Format Rupiah: Rp [angka] tanpa desimal
-6. Hindari pengulangan kata atau frasa
+1. HANYA gunakan **bold** untuk kategori/judul penting (seperti **Evaluasi Pengeluaran:**)
+2. JANGAN gunakan italic atau underscore
+3. Gunakan bullet point (•) untuk setiap tips
+4. Format: • **Kategori:** penjelasan lengkap
+5. Format Rupiah: Rp [angka] (contoh: Rp 233 atau Rp 23.000)
+6. Berikan 5-8 tips yang actionable
 
 CONTOH FORMAT YANG BENAR:
-• **Evaluasi Pengeluaran:** Pengeluaran kesehatan sebesar Rp 233.000 cukup tinggi. Pertimbangkan alternatif yang lebih terjangkau.
+• **Evaluasi Pengeluaran:** Pengeluaran kesehatan sebesar Rp 233 cukup tinggi. Pertimbangkan alternatif yang lebih terjangkau. • **Tingkatkan Pendapatan:** Pendapatan Rp 89 lebih kecil dari pengeluaran. Cari peluang freelance tambahan. • **Buat Anggaran:** Susun anggaran bulanan yang detail untuk mengontrol pengeluaran.
 
-• **Tingkatkan Pendapatan:** Pendapatan Rp 89.000 lebih kecil dari pengeluaran. Cari peluang freelance tambahan.
-
-• **Buat Anggaran:** Susun anggaran bulanan yang detail untuk mengontrol pengeluaran dengan lebih baik.
-
-PENTING: Setiap bullet point HARUS ada line break (baris kosong) sebelum bullet berikutnya.`;
+Berikan tips yang spesifik berdasarkan data keuangan user.`;
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 50000);
