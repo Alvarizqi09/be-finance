@@ -104,6 +104,9 @@ CONTOH FORMAT YANG BENAR:
 
 Berikan tips yang actionable, mudah dipahami, dan dalam format bullet points dengan penjelasan lengkap.`;
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 50000); // 50 second timeout
+
     const response = await fetch(GEMINI_API_URL, {
       method: "POST",
       headers: {
@@ -126,7 +129,10 @@ Berikan tips yang actionable, mudah dipahami, dan dalam format bullet points den
           topK: 40,
         },
       }),
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorData = await response.json();
