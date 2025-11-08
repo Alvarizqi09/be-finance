@@ -89,23 +89,25 @@ ${thisMonthExpenses
 
     const systemPrompt = `Kamu adalah asisten keuangan yang membantu. Berikan tips yang jelas dan praktis.
 
-ATURAN PENTING:
-1. Gunakan format markdown yang bersih - HANYA gunakan **bold** untuk penekanan penting (kategori/judul)
-2. JANGAN gunakan italic (*text*) - hanya bold saja
-3. Gunakan bullet points (•) untuk list
-4. Format Rupiah: Rp [angka]
-5. Berikan saran yang spesifik berdasarkan data user
+ATURAN FORMATTING (WAJIB DIIKUTI):
+1. HANYA gunakan **bold** untuk kategori/judul penting
+2. JANGAN PERNAH gunakan italic (*text*) atau _text_
+3. Setiap bullet point HARUS dipisah dengan line break (enter)
+4. Gunakan bullet point (•) untuk list
+5. Format Rupiah: Rp [angka] tanpa desimal
 6. Hindari pengulangan kata atau frasa
-7. Setiap bullet point adalah 1 paragraf lengkap dengan penjelasan detail
 
 CONTOH FORMAT YANG BENAR:
-• **Evaluasi Pengeluaran:** Pengeluaran kesehatan sebesar Rp 233.000 cukup tinggi. Pertimbangkan alternatif yang lebih terjangkau seperti fasilitas kesehatan yang ditanggung asuransi atau obat generik.
-• **Tingkatkan Pendapatan:** Pendapatan Rp 89.000 lebih kecil dari pengeluaran. Cari peluang freelance tambahan atau kembangkan skill baru untuk meningkatkan penghasilan.
+• **Evaluasi Pengeluaran:** Pengeluaran kesehatan sebesar Rp 233.000 cukup tinggi. Pertimbangkan alternatif yang lebih terjangkau.
 
-Berikan tips yang actionable, mudah dipahami, dan dalam format bullet points dengan penjelasan lengkap.`;
+• **Tingkatkan Pendapatan:** Pendapatan Rp 89.000 lebih kecil dari pengeluaran. Cari peluang freelance tambahan.
+
+• **Buat Anggaran:** Susun anggaran bulanan yang detail untuk mengontrol pengeluaran dengan lebih baik.
+
+PENTING: Setiap bullet point HARUS ada line break (baris kosong) sebelum bullet berikutnya.`;
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 50000); // 50 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 50000);
 
     const response = await fetch(GEMINI_API_URL, {
       method: "POST",
@@ -117,16 +119,16 @@ Berikan tips yang actionable, mudah dipahami, dan dalam format bullet points den
           {
             parts: [
               {
-                text: `${systemPrompt}\n\nDATA KEUANGAN:\n${financialContext}\n\nPERTANYAAN: ${message}`,
+                text: `${systemPrompt}\n\nDATA KEUANGAN:\n${financialContext}\n\nPERTANYAAN: ${message}\n\nREMINDER: Gunakan format dengan **bold** untuk kategori dan pisahkan setiap bullet point dengan line break!`,
               },
             ],
           },
         ],
         generationConfig: {
-          temperature: 0.4,
+          temperature: 0.3,
           maxOutputTokens: 1000,
-          topP: 0.8,
-          topK: 40,
+          topP: 0.7,
+          topK: 30,
         },
       }),
       signal: controller.signal,
@@ -153,9 +155,18 @@ Berikan tips yang actionable, mudah dipahami, dan dalam format bullet points den
     res.json({ response: botResponse });
   } catch (error) {
     console.error("AI Chat Error:", error);
+
+    // Handle specific error types
+    if (error.name === "AbortError") {
+      return res.status(504).json({
+        error: "Request timeout",
+        message: "AI service took too long to respond. Please try again.",
+      });
+    }
+
     res.status(500).json({
       error: "Internal server error",
-      message: error.message,
+      message: "Failed to process your request. Please try again later.",
     });
   }
 };
@@ -168,10 +179,10 @@ const cleanAIResponse = (text) => {
 
   // Apply cleaning passes
   for (let i = 0; i < 3; i++) {
-    // Remove duplicate phrases with colon (e.g., "Evaluasi:Evaluasi:")
+    // Remove duplicate phrases with colon
     cleaned = cleaned.replace(/([A-Za-z\u00C0-\u024F\s]+):\s*\1:/gi, "$1:");
 
-    // Remove duplicate Rupiah amounts (e.g., "Rp 233Rp 233" -> "Rp 233")
+    // Remove duplicate Rupiah amounts
     cleaned = cleaned.replace(/(Rp\s*[\d.,]+)\s*Rp\s*[\d.,]+/gi, "$1");
 
     // Remove duplicate consecutive words
@@ -179,13 +190,20 @@ const cleanAIResponse = (text) => {
 
     // Remove duplicate numbers
     cleaned = cleaned.replace(/(\d+)\s*\1\b/g, "$1");
-
-    // Clean up extra spaces
-    cleaned = cleaned.replace(/\s+/g, " ");
   }
 
-  // Remove italic markers since we're not using them
-  cleaned = cleaned.replace(/\*([^*]+)\*/g, "$1");
+  // Convert ALL italic markers to plain text (remove * around single words/phrases)
+  // But keep ** for bold
+  cleaned = cleaned.replace(/(?<!\*)\*(?!\*)([^*]+?)(?<!\*)\*(?!\*)/g, "$1");
+
+  // Ensure proper line breaks between bullet points
+  cleaned = cleaned.replace(/([•\-])\s*/g, "\n$1 ");
+
+  // Remove multiple consecutive line breaks (max 2)
+  cleaned = cleaned.replace(/\n{3,}/g, "\n\n");
+
+  // Clean up extra spaces
+  cleaned = cleaned.replace(/ +/g, " ");
 
   // Final formatting cleanup
   cleaned = cleaned
