@@ -90,17 +90,19 @@ ${thisMonthExpenses
     const systemPrompt = `Kamu adalah asisten keuangan yang membantu. Berikan tips yang jelas dan praktis.
 
 ATURAN PENTING:
-1. Gunakan format markdown yang bersih (**bold** untuk penekanan, *italic* untuk catatan)
-2. Gunakan bullet points (•) untuk list
-3. Format Rupiah: Rp [angka]
-4. Berikan saran yang spesifik berdasarkan data user
-5. Hindari pengulangan kata atau frasa
+1. Gunakan format markdown yang bersih - HANYA gunakan **bold** untuk penekanan penting (kategori/judul)
+2. JANGAN gunakan italic (*text*) - hanya bold saja
+3. Gunakan bullet points (•) untuk list
+4. Format Rupiah: Rp [angka]
+5. Berikan saran yang spesifik berdasarkan data user
+6. Hindari pengulangan kata atau frasa
+7. Setiap bullet point adalah 1 paragraf lengkap dengan penjelasan detail
 
 CONTOH FORMAT YANG BENAR:
-• **Evaluasi Pengeluaran:** Pengeluaran kesehatan sebesar Rp 233.000 cukup tinggi. Pertimbangkan alternatif yang lebih terjangkau.
-• **Tingkatkan Pendapatan:** Pendapatan Rp 89.000 lebih kecil dari pengeluaran. Cari peluang tambahan.
+• **Evaluasi Pengeluaran:** Pengeluaran kesehatan sebesar Rp 233.000 cukup tinggi. Pertimbangkan alternatif yang lebih terjangkau seperti fasilitas kesehatan yang ditanggung asuransi atau obat generik.
+• **Tingkatkan Pendapatan:** Pendapatan Rp 89.000 lebih kecil dari pengeluaran. Cari peluang freelance tambahan atau kembangkan skill baru untuk meningkatkan penghasilan.
 
-Berdasarkan data keuangan, berikan tips yang actionable dan mudah dipahami.`;
+Berikan tips yang actionable, mudah dipahami, dan dalam format bullet points dengan penjelasan lengkap.`;
 
     const response = await fetch(GEMINI_API_URL, {
       method: "POST",
@@ -119,7 +121,7 @@ Berdasarkan data keuangan, berikan tips yang actionable dan mudah dipahami.`;
         ],
         generationConfig: {
           temperature: 0.4,
-          maxOutputTokens: 800,
+          maxOutputTokens: 1000,
           topP: 0.8,
           topK: 40,
         },
@@ -175,6 +177,9 @@ const cleanAIResponse = (text) => {
     // Clean up extra spaces
     cleaned = cleaned.replace(/\s+/g, " ");
   }
+
+  // Remove italic markers since we're not using them
+  cleaned = cleaned.replace(/\*([^*]+)\*/g, "$1");
 
   // Final formatting cleanup
   cleaned = cleaned
