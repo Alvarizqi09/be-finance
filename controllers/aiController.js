@@ -1,4 +1,4 @@
-// controllers/aiController.js - COMPLETE VERSION WITH DEBUG
+// controllers/aiController.js - FIXED CLEANING FUNCTION
 const Income = require("../models/Income");
 const Expense = require("../models/Expense");
 
@@ -43,23 +43,12 @@ const chatWithAI = async (req, res) => {
       0
     );
 
-    // FIXED: Simple and reliable formatCurrency function
+    // Simple and reliable formatCurrency function
     const formatCurrency = (amount) => {
-      // Ensure it's a number
       const num = Number(amount) || 0;
-
-      // Format with Indonesian locale (dot as thousand separator)
       const formatted = num.toLocaleString("id-ID");
-
       return `Rp ${formatted}`;
     };
-
-    // DEBUG: Log to verify formatting is correct
-    console.log("=== CURRENCY FORMAT DEBUG ===");
-    console.log("Sample expense 20000:", formatCurrency(20000));
-    console.log("Sample expense 233:", formatCurrency(233));
-    console.log("Total expense:", formatCurrency(totalExpense));
-    console.log("============================");
 
     const financialContext = `
 User's Financial Data:
@@ -99,11 +88,6 @@ ${thisMonthExpenses
   )
   .join("\n")}
 `;
-
-    // DEBUG: Log the context being sent to AI
-    console.log("=== FINANCIAL CONTEXT SENT TO AI ===");
-    console.log(financialContext);
-    console.log("===================================");
 
     const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
     const MODEL_NAME = "gemini-2.0-flash";
@@ -168,24 +152,13 @@ PERHATIAN: Gunakan angka Rupiah PERSIS dari data yang diberikan. Jangan ubah for
       data.candidates?.[0]?.content?.parts?.[0]?.text ||
       "Maaf, saya tidak bisa memproses permintaan tersebut. Silakan coba lagi.";
 
-    // DEBUG: Log raw AI response
-    console.log("=== RAW AI RESPONSE ===");
-    console.log(botResponse);
-    console.log("======================");
-
-    // Clean response
+    // Clean response with SAFE cleaning that preserves currency
     botResponse = cleanAIResponse(botResponse);
-
-    // DEBUG: Log cleaned response
-    console.log("=== CLEANED AI RESPONSE ===");
-    console.log(botResponse);
-    console.log("===========================");
 
     res.json({ response: botResponse });
   } catch (error) {
     console.error("AI Chat Error:", error);
 
-    // Handle specific error types
     if (error.name === "AbortError") {
       return res.status(504).json({
         error: "Request timeout",
@@ -200,41 +173,34 @@ PERHATIAN: Gunakan angka Rupiah PERSIS dari data yang diberikan. Jangan ubah for
   }
 };
 
-// Improved cleaning function
+// FIXED: Safe cleaning function that PRESERVES currency formatting
 const cleanAIResponse = (text) => {
   if (!text) return text;
 
   let cleaned = text;
 
-  // Apply cleaning passes
-  for (let i = 0; i < 3; i++) {
-    // Remove duplicate phrases with colon
-    cleaned = cleaned.replace(/([A-Za-z\u00C0-\u024F\s]+):\s*\1:/gi, "$1:");
-
-    // Remove duplicate Rupiah amounts
-    cleaned = cleaned.replace(/(Rp\s*[\d.,]+)\s*Rp\s*[\d.,]+/gi, "$1");
-
-    // Remove duplicate consecutive words
-    cleaned = cleaned.replace(/\b(\w+)\s+\1\b/gi, "$1");
-
-    // Remove duplicate numbers
-    cleaned = cleaned.replace(/(\d+)\s*\1\b/g, "$1");
-  }
-
-  // Convert ALL italic markers to plain text (remove * around single words/phrases)
-  // But keep ** for bold
+  // Step 1: Remove italic markers (single asterisks) but keep bold (**)
+  // This regex carefully avoids touching ** while removing single *
   cleaned = cleaned.replace(/(?<!\*)\*(?!\*)([^*]+?)(?<!\*)\*(?!\*)/g, "$1");
 
-  // Ensure proper line breaks between bullet points
+  // Step 2: Clean up duplicate phrases with colons (but avoid touching numbers)
+  // Only match word characters, not numbers
+  cleaned = cleaned.replace(/([A-Za-z\u00C0-\u024F\s]+):\s*\1:/gi, "$1:");
+
+  // Step 3: Remove duplicate consecutive WORDS (not numbers!)
+  // Use word boundary to avoid touching currency amounts
+  cleaned = cleaned.replace(/\b([A-Za-z\u00C0-\u024F]+)\s+\1\b/gi, "$1");
+
+  // Step 4: Fix line breaks for bullet points
   cleaned = cleaned.replace(/([•\-])\s*/g, "\n$1 ");
 
-  // Remove multiple consecutive line breaks (max 2)
+  // Step 5: Remove excessive line breaks (max 2)
   cleaned = cleaned.replace(/\n{3,}/g, "\n\n");
 
-  // Clean up extra spaces
-  cleaned = cleaned.replace(/ +/g, " ");
+  // Step 6: Clean up extra spaces (but not in currency)
+  cleaned = cleaned.replace(/ {2,}/g, " ");
 
-  // Final formatting cleanup
+  // Step 7: Final formatting cleanup
   cleaned = cleaned
     .replace(/\*\*\*/g, "**") // Fix triple asterisks
     .replace(/\(\s+/g, "(") // Fix spacing in parentheses
