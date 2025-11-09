@@ -44,19 +44,28 @@ const chatWithAI = async (req, res) => {
     );
 
     // Prepare financial context for AI
+    const formatCurrency = (amount) => {
+      return new Intl.NumberFormat("id-ID", {
+        style: "currency",
+        currency: "IDR",
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      }).format(amount);
+    };
+
     const financialContext = `
 User's Financial Data:
-- Total Balance: Rp ${balance.toLocaleString("id-ID")}
-- Total Income: Rp ${totalIncome.toLocaleString("id-ID")}
-- Total Expense: Rp ${totalExpense.toLocaleString("id-ID")}
-- This Month's Income: Rp ${monthlyIncomeTotal.toLocaleString("id-ID")}
-- This Month's Expense: Rp ${monthlyExpenseTotal.toLocaleString("id-ID")}
+- Total Balance: ${formatCurrency(balance)}
+- Total Income: ${formatCurrency(totalIncome)}
+- Total Expense: ${formatCurrency(totalExpense)}
+- This Month's Income: ${formatCurrency(monthlyIncomeTotal)}
+- This Month's Expense: ${formatCurrency(monthlyExpenseTotal)}
 
 Recent Income (latest 10):
 ${incomes
   .map(
     (inc) =>
-      `- ${inc.source}: Rp ${inc.amount.toLocaleString("id-ID")} (${new Date(
+      `- ${inc.source}: ${formatCurrency(inc.amount)} (${new Date(
         inc.date
       ).toLocaleDateString("id-ID")})`
   )
@@ -66,7 +75,7 @@ Recent Expenses (latest 10):
 ${expenses
   .map(
     (exp) =>
-      `- ${exp.source}: Rp ${exp.amount.toLocaleString("id-ID")} (${new Date(
+      `- ${exp.source}: ${formatCurrency(exp.amount)} (${new Date(
         exp.date
       ).toLocaleDateString("id-ID")})`
   )
@@ -76,7 +85,7 @@ This Month's Expenses:
 ${thisMonthExpenses
   .map(
     (exp) =>
-      `- ${exp.source}: Rp ${exp.amount.toLocaleString("id-ID")} (${new Date(
+      `- ${exp.source}: ${formatCurrency(exp.amount)} (${new Date(
         exp.date
       ).toLocaleDateString("id-ID")})`
   )
