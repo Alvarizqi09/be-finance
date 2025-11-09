@@ -43,14 +43,18 @@ const chatWithAI = async (req, res) => {
       0
     );
 
-    // Prepare financial context for AI
+    // FIXED: Improved formatCurrency function
     const formatCurrency = (amount) => {
-      return new Intl.NumberFormat("id-ID", {
-        style: "currency",
-        currency: "IDR",
+      // Convert to number to ensure proper handling
+      const numAmount = Number(amount);
+      
+      // Format with thousand separators (dot for thousands, no decimals)
+      const formatted = numAmount.toLocaleString("id-ID", {
         minimumFractionDigits: 0,
         maximumFractionDigits: 0,
-      }).format(amount);
+      });
+      
+      return `Rp ${formatted}`;
     };
 
     const financialContext = `
@@ -103,11 +107,13 @@ ATURAN FORMATTING (WAJIB DIIKUTI):
 2. JANGAN gunakan italic atau underscore
 3. Gunakan bullet point (•) untuk setiap tips
 4. Format: • **Kategori:** penjelasan lengkap
-5. Format Rupiah: Rp [angka] (contoh: Rp 233 atau Rp 23.000)
+5. Format Rupiah: Rp [angka] (contoh: Rp 233 atau Rp 20.000)
 6. Berikan 5-8 tips yang actionable
 
 CONTOH FORMAT YANG BENAR:
-• **Evaluasi Pengeluaran:** Pengeluaran kesehatan sebesar Rp 233 cukup tinggi. Pertimbangkan alternatif yang lebih terjangkau. • **Tingkatkan Pendapatan:** Pendapatan Rp 89 lebih kecil dari pengeluaran. Cari peluang freelance tambahan. • **Buat Anggaran:** Susun anggaran bulanan yang detail untuk mengontrol pengeluaran.
+• **Evaluasi Pengeluaran:** Pengeluaran kesehatan sebesar Rp 233 cukup tinggi. Pertimbangkan alternatif yang lebih terjangkau.
+• **Tingkatkan Pendapatan:** Pendapatan Rp 89 lebih kecil dari pengeluaran. Cari peluang freelance tambahan.
+• **Buat Anggaran:** Susun anggaran bulanan yang detail untuk mengontrol pengeluaran.
 
 Berikan tips yang spesifik berdasarkan data keuangan user.`;
 
