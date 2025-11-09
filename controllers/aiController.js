@@ -1,4 +1,4 @@
-// controllers/aiController.js
+// controllers/aiController.js - COMPLETE VERSION WITH DEBUG
 const Income = require("../models/Income");
 const Expense = require("../models/Expense");
 
@@ -43,19 +43,23 @@ const chatWithAI = async (req, res) => {
       0
     );
 
-    // FIXED: Improved formatCurrency function
+    // FIXED: Simple and reliable formatCurrency function
     const formatCurrency = (amount) => {
-      // Convert to number to ensure proper handling
-      const numAmount = Number(amount);
-      
-      // Format with thousand separators (dot for thousands, no decimals)
-      const formatted = numAmount.toLocaleString("id-ID", {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-      });
-      
+      // Ensure it's a number
+      const num = Number(amount) || 0;
+
+      // Format with Indonesian locale (dot as thousand separator)
+      const formatted = num.toLocaleString("id-ID");
+
       return `Rp ${formatted}`;
     };
+
+    // DEBUG: Log to verify formatting is correct
+    console.log("=== CURRENCY FORMAT DEBUG ===");
+    console.log("Sample expense 20000:", formatCurrency(20000));
+    console.log("Sample expense 233:", formatCurrency(233));
+    console.log("Total expense:", formatCurrency(totalExpense));
+    console.log("============================");
 
     const financialContext = `
 User's Financial Data:
@@ -96,6 +100,11 @@ ${thisMonthExpenses
   .join("\n")}
 `;
 
+    // DEBUG: Log the context being sent to AI
+    console.log("=== FINANCIAL CONTEXT SENT TO AI ===");
+    console.log(financialContext);
+    console.log("===================================");
+
     const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
     const MODEL_NAME = "gemini-2.0-flash";
     const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${GEMINI_API_KEY}`;
@@ -107,15 +116,14 @@ ATURAN FORMATTING (WAJIB DIIKUTI):
 2. JANGAN gunakan italic atau underscore
 3. Gunakan bullet point (•) untuk setiap tips
 4. Format: • **Kategori:** penjelasan lengkap
-5. Format Rupiah: Rp [angka] (contoh: Rp 233 atau Rp 20.000)
+5. PENTING: Gunakan format Rupiah PERSIS seperti yang diberikan dalam data (contoh: Rp 20.000, Rp 233)
 6. Berikan 5-8 tips yang actionable
 
 CONTOH FORMAT YANG BENAR:
-• **Evaluasi Pengeluaran:** Pengeluaran kesehatan sebesar Rp 233 cukup tinggi. Pertimbangkan alternatif yang lebih terjangkau.
-• **Tingkatkan Pendapatan:** Pendapatan Rp 89 lebih kecil dari pengeluaran. Cari peluang freelance tambahan.
-• **Buat Anggaran:** Susun anggaran bulanan yang detail untuk mengontrol pengeluaran.
+• **Evaluasi Pengeluaran:** Pengeluaran makanan sebesar Rp 20.000 cukup tinggi untuk satu kali transaksi. Pertimbangkan untuk memasak di rumah atau mencari warung yang lebih terjangkau.
+• **Tingkatkan Pendapatan:** Pendapatan freelance sebesar Rp 89 masih kecil. Cari peluang freelance tambahan atau tingkatkan skill untuk tarif lebih tinggi.
 
-Berikan tips yang spesifik berdasarkan data keuangan user.`;
+PERHATIAN: Gunakan angka Rupiah PERSIS dari data yang diberikan. Jangan ubah format atau hilangkan digit!`;
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 50000);
@@ -130,7 +138,7 @@ Berikan tips yang spesifik berdasarkan data keuangan user.`;
           {
             parts: [
               {
-                text: `${systemPrompt}\n\nDATA KEUANGAN:\n${financialContext}\n\nPERTANYAAN: ${message}\n\nREMINDER: Gunakan format dengan **bold** untuk kategori dan pisahkan setiap bullet point dengan line break!`,
+                text: `${systemPrompt}\n\nDATA KEUANGAN:\n${financialContext}\n\nPERTANYAAN: ${message}\n\nREMINDER: Salin angka Rupiah PERSIS dari data keuangan yang diberikan! Gunakan format dengan **bold** untuk kategori dan pisahkan setiap bullet point dengan line break!`,
               },
             ],
           },
@@ -160,8 +168,18 @@ Berikan tips yang spesifik berdasarkan data keuangan user.`;
       data.candidates?.[0]?.content?.parts?.[0]?.text ||
       "Maaf, saya tidak bisa memproses permintaan tersebut. Silakan coba lagi.";
 
+    // DEBUG: Log raw AI response
+    console.log("=== RAW AI RESPONSE ===");
+    console.log(botResponse);
+    console.log("======================");
+
     // Clean response
     botResponse = cleanAIResponse(botResponse);
+
+    // DEBUG: Log cleaned response
+    console.log("=== CLEANED AI RESPONSE ===");
+    console.log(botResponse);
+    console.log("===========================");
 
     res.json({ response: botResponse });
   } catch (error) {
