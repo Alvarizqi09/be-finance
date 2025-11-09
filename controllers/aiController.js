@@ -128,7 +128,7 @@ PERHATIAN: Gunakan angka Rupiah PERSIS dari data yang diberikan. Jangan ubah for
           },
         ],
         generationConfig: {
-          temperature: 0.3,
+          temperature: 0.5,
           maxOutputTokens: 1000,
           topP: 0.7,
           topK: 30,
