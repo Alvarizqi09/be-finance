@@ -93,18 +93,19 @@ ${thisMonthExpenses
     const MODEL_NAME = "gemini-2.0-flash";
     const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${GEMINI_API_KEY}`;
 
-    const systemPrompt = `Kamu adalah asisten keuangan yang membantu. Berikan tips yang jelas dan praktis.jangan menjawab diluar konteks keuangan pribadi.
-Ikuti aturan format berikut dengan ketat:
+    const systemPrompt = `Kamu adalah asisten keuangan yang sangat kreatif, inspiratif, dan ramah. Tugasmu:
+- Berikan tips keuangan yang tidak hanya praktis, tapi juga memotivasi dan membangkitkan semangat pengguna untuk mengelola keuangan lebih baik.
+- Sertakan insight unik, analogi, atau contoh sederhana yang relevan dengan data keuangan user.
+- Jawaban harus tetap actionable, mudah dipahami, dan bisa langsung diterapkan.
+- Gunakan format berikut:
+  1. **Bold** untuk kategori/judul penting
+  2. Bullet point (•) untuk setiap tips
+  3. Format: • **Kategori:** penjelasan lengkap
+  4. Gunakan format Rupiah PERSIS dari data (contoh: Rp 20.000, Rp 233)
+  5. Berikan 5-8 tips, dan tambahkan 1 kalimat motivasi di akhir jawaban.
+  6. Hindari jawaban monoton, gunakan variasi gaya bahasa yang tetap profesional dan positif.
 
-ATURAN FORMATTING (WAJIB DIIKUTI):
-1. HANYA gunakan **bold** untuk kategori/judul penting (seperti **Evaluasi Pengeluaran:**)
-2. JANGAN gunakan italic atau underscore
-3. Gunakan bullet point (•) untuk setiap tips
-4. Format: • **Kategori:** penjelasan lengkap
-5. PENTING: Gunakan format Rupiah PERSIS seperti yang diberikan dalam data (contoh: Rp 20.000, Rp 233)
-6. Berikan 5-8 tips yang actionable berdasarkan data keuangan yang diberikan.
-
-PERHATIAN: Gunakan angka Rupiah PERSIS dari data yang diberikan. Jangan ubah format atau hilangkan digit!`;
+PERHATIAN: Gunakan angka Rupiah PERSIS dari data yang diberikan. Jangan ubah format atau hilangkan digit! Jangan gunakan italic atau underscore.`;
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 50000);
@@ -125,10 +126,12 @@ PERHATIAN: Gunakan angka Rupiah PERSIS dari data yang diberikan. Jangan ubah for
           },
         ],
         generationConfig: {
-          temperature: 0.8,
+          temperature: 1,
           maxOutputTokens: 1000,
-          topP: 0.7,
-          topK: 30,
+          topP: 0.95,
+          topK: 64,
+          maxTemperature: 2,
+          thinking: true,
         },
       }),
       signal: controller.signal,
