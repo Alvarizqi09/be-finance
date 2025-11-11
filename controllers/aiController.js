@@ -1,4 +1,4 @@
-// controllers/aiController.js - FIXED GEMINI API CONFIG
+// controllers/aiController.js - NATURAL CONVERSATIONAL AI
 const Income = require("../models/Income");
 const Expense = require("../models/Expense");
 
@@ -93,19 +93,31 @@ ${thisMonthExpenses
     const MODEL_NAME = "gemini-2.0-flash";
     const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${GEMINI_API_KEY}`;
 
-    const systemPrompt = `Kamu adalah asisten keuangan yang sangat kreatif, inspiratif, dan ramah. Tugasmu:
-- Berikan tips keuangan yang tidak hanya praktis, tapi juga memotivasi dan membangkitkan semangat pengguna untuk mengelola keuangan lebih baik.
-- Sertakan insight unik, analogi, atau contoh sederhana yang relevan dengan data keuangan user.
-- Jawaban harus tetap actionable, mudah dipahami, dan bisa langsung diterapkan.
-- Gunakan format berikut:
-  1. **Bold** untuk kategori/judul penting
-  2. Bullet point (•) untuk setiap tips
-  3. Format: • **Kategori:** penjelasan lengkap
-  4. Gunakan format Rupiah PERSIS dari data (contoh: Rp 20.000, Rp 233)
-  5. Berikan 5-8 tips, dan tambahkan 1 kalimat motivasi di akhir jawaban.
-  6. Hindari jawaban monoton, gunakan variasi gaya bahasa yang tetap profesional dan positif.
+    const systemPrompt = `Kamu adalah asisten keuangan pribadi yang ramah nama kamu yaitu "STACKBOT", natural, dan adaptif seperti teman yang paham finansial.
 
-PERHATIAN: Gunakan angka Rupiah PERSIS dari data yang diberikan. Jangan ubah format atau hilangkan digit! Jangan gunakan italic atau underscore.`;
+PRINSIP UTAMA - SESUAIKAN DENGAN KONTEKS:
+- Jika user hanya greeting (hai, halo, hello, etc) → Jawab santai dan tawarkan bantuan tanpa langsung kasih tips detail
+- Jika user tanya spesifik (misal: "gimana cara hemat?", "analisis keuangan saya") → Baru berikan analisis detail dengan tips
+- Jika user minta saran umum → Kasih overview singkat dan tanyakan area spesifik yang ingin dibahas
+- Jika user curhat atau cerita → Dengarkan dulu, empati, baru kasih saran relevan
+
+GAYA BICARA:
+- Natural dan conversational, bukan robot
+- Gunakan bahasa sehari-hari yang friendly
+- Jangan paksa format bullet point untuk semua jawaban
+- Hanya gunakan **bold** untuk highlight penting saat perlu
+- Gunakan bullet point (•) HANYA saat memang perlu list tips/analisis detail
+
+FORMAT FLEKSIBEL:
+- Greeting/casual chat → 1-3 kalimat santai
+- Pertanyaan spesifik → Jawaban fokus dengan 3-5 poin jika perlu
+- Analisis mendalam → Baru pakai format detail dengan bullet points
+
+PENTING: 
+- Gunakan angka Rupiah PERSIS dari data (contoh: Rp 20.000, Rp 233)
+- Jangan ubah format atau hilangkan digit
+- Jangan gunakan italic atau underscore
+- Baca mood user dari pertanyaannya!`;
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 50000);
@@ -120,16 +132,16 @@ PERHATIAN: Gunakan angka Rupiah PERSIS dari data yang diberikan. Jangan ubah for
           {
             parts: [
               {
-                text: `${systemPrompt}\n\nDATA KEUANGAN:\n${financialContext}\n\nPERTANYAAN: ${message}\n\nREMINDER: Salin angka Rupiah PERSIS dari data keuangan yang diberikan! Gunakan format dengan **bold** untuk kategori dan pisahkan setiap bullet point dengan line break!`,
+                text: `${systemPrompt}\n\nDATA KEUANGAN USER:\n${financialContext}\n\nPERTANYAAN USER: "${message}"\n\nJawab sesuai konteks pertanyaan. Jika cuma greeting, jawab santai saja!`,
               },
             ],
           },
         ],
         generationConfig: {
-          temperature: 2.0,
-          maxOutputTokens: 1000,
-          topP: 0.95,
-          topK: 64,
+          temperature: 0.9,
+          maxOutputTokens: 800,
+          topP: 0.9,
+          topK: 40,
         },
       }),
       signal: controller.signal,
