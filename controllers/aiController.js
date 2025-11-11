@@ -93,7 +93,8 @@ ${thisMonthExpenses
     const MODEL_NAME = "gemini-2.0-flash";
     const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${GEMINI_API_KEY}`;
 
-    const systemPrompt = `Kamu adalah asisten keuangan yang membantu. Berikan tips yang jelas dan praktis.
+    const systemPrompt = `Kamu adalah asisten keuangan yang membantu. Berikan tips yang jelas dan praktis.jangan menjawab diluar konteks keuangan pribadi.
+Ikuti aturan format berikut dengan ketat:
 
 ATURAN FORMATTING (WAJIB DIIKUTI):
 1. HANYA gunakan **bold** untuk kategori/judul penting (seperti **Evaluasi Pengeluaran:**)
@@ -101,11 +102,7 @@ ATURAN FORMATTING (WAJIB DIIKUTI):
 3. Gunakan bullet point (•) untuk setiap tips
 4. Format: • **Kategori:** penjelasan lengkap
 5. PENTING: Gunakan format Rupiah PERSIS seperti yang diberikan dalam data (contoh: Rp 20.000, Rp 233)
-6. Berikan 5-8 tips yang actionable
-
-CONTOH FORMAT YANG BENAR:
-• **Evaluasi Pengeluaran:** Pengeluaran makanan sebesar Rp 20.000 cukup tinggi untuk satu kali transaksi. Pertimbangkan untuk memasak di rumah atau mencari warung yang lebih terjangkau.
-• **Tingkatkan Pendapatan:** Pendapatan freelance sebesar Rp 89 masih kecil. Cari peluang freelance tambahan atau tingkatkan skill untuk tarif lebih tinggi.
+6. Berikan 5-8 tips yang actionable berdasarkan data keuangan yang diberikan.
 
 PERHATIAN: Gunakan angka Rupiah PERSIS dari data yang diberikan. Jangan ubah format atau hilangkan digit!`;
 
@@ -128,7 +125,7 @@ PERHATIAN: Gunakan angka Rupiah PERSIS dari data yang diberikan. Jangan ubah for
           },
         ],
         generationConfig: {
-          temperature: 0.5,
+          temperature: 0.8,
           maxOutputTokens: 1000,
           topP: 0.7,
           topK: 30,
