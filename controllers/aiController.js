@@ -138,7 +138,7 @@ PENTING:
           },
         ],
         generationConfig: {
-          temperature: 0.9,
+          temperature: 0.7,
           maxOutputTokens: 800,
           topP: 0.9,
           topK: 40,
