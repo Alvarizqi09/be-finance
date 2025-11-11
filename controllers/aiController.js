@@ -151,6 +151,17 @@ PENTING:
 
     if (!response.ok) {
       const errorData = await response.json();
+
+      // Handle specific error codes with user-friendly messages
+      if (response.status === 429) {
+        return res.status(429).json({
+          error: "Quota Limit Exceeded",
+          message:
+            "Maaf, batas penggunaan AI sudah tercapai. Silakan coba lagi dalam beberapa menit atau hubungi admin untuk upgrade quota.",
+          retryAfter: response.headers.get("Retry-After") || 60,
+        });
+      }
+
       return res.status(response.status).json({
         error: "Gemini API Error",
         details: errorData,
