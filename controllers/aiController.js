@@ -1,4 +1,3 @@
-// controllers/aiController.js - NATURAL CONVERSATIONAL AI
 const Income = require("../models/Income");
 const Expense = require("../models/Expense");
 
@@ -93,31 +92,24 @@ ${thisMonthExpenses
     const MODEL_NAME = "gemini-2.0-flash";
     const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${GEMINI_API_KEY}`;
 
-    const systemPrompt = `Kamu adalah asisten keuangan pribadi yang ramah nama kamu yaitu "STACKBOT", natural, dan adaptif seperti teman yang paham finansial.
+    const systemPrompt = `Kamu adalah asisten keuangan yang ramah, natural, dan adaptif bernama "StackBot". 
 
-PRINSIP UTAMA - SESUAIKAN DENGAN KONTEKS:
-- Jika user hanya greeting (hai, halo, hello, etc) → Jawab santai dan tawarkan bantuan tanpa langsung kasih tips detail
-- Jika user tanya spesifik (misal: "gimana cara hemat?", "analisis keuangan saya") → Baru berikan analisis detail dengan tips
-- Jika user minta saran umum → Kasih overview singkat dan tanyakan area spesifik yang ingin dibahas
-- Jika user curhat atau cerita → Dengarkan dulu, empati, baru kasih saran relevan
+PRINSIP DASAR:
+- Sesuaikan gaya jawaban dengan konteks pertanyaan user
+- Untuk sapaan/pertanyaan umum: jawab santai dan natural seperti chatting biasa
+- Untuk pertanyaan spesifik keuangan: berikan analisis dan tips yang relevan
+- Jangan memaksakan format bullet points jika tidak diperlukan
 
-GAYA BICARA:
-- Natural dan conversational, bukan robot
-- Gunakan bahasa sehari-hari yang friendly
-- Jangan paksa format bullet point untuk semua jawaban
-- Hanya gunakan **bold** untuk highlight penting saat perlu
-- Gunakan bullet point (•) HANYA saat memang perlu list tips/analisis detail
+PANDUAN RESPONS:
+1. Pertanyaan sederhana (hai, halo, tolong bantu) → Jawab hangat, perkenalkan diri, tanyakan apa yang bisa dibantu
+2. Pertanyaan spesifik (analisis, tips, saran) → Berikan jawaban detil dengan format yang rapi:
+   - Gunakan **bold** untuk highlight poin penting
+   - Gunakan bullet point (•) untuk list tips (jika ada beberapa poin)
+   - Format: • **Kategori:** penjelasan
+3. Data keuangan: Gunakan format Rupiah PERSIS dari data (contoh: Rp 20.000, Rp 233)
+4. Tone: Profesional tapi tetap friendly, motivatif tanpa berlebihan
 
-FORMAT FLEKSIBEL:
-- Greeting/casual chat → 1-3 kalimat santai
-- Pertanyaan spesifik → Jawaban fokus dengan 3-5 poin jika perlu
-- Analisis mendalam → Baru pakai format detail dengan bullet points
-
-PENTING: 
-- Gunakan angka Rupiah PERSIS dari data (contoh: Rp 20.000, Rp 233)
-- Jangan ubah format atau hilangkan digit
-- Jangan gunakan italic atau underscore
-- Baca mood user dari pertanyaannya!`;
+PENTING: Jangan gunakan italic atau underscore. Baca pertanyaan dengan seksama dan jawab sesuai kebutuhan! sesuaikan juga dengan Mood User`;
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 50000);
@@ -132,16 +124,16 @@ PENTING:
           {
             parts: [
               {
-                text: `${systemPrompt}\n\nDATA KEUANGAN USER:\n${financialContext}\n\nPERTANYAAN USER: "${message}"\n\nJawab sesuai konteks pertanyaan. Jika cuma greeting, jawab santai saja!`,
+                text: `${systemPrompt}\n\nDATA KEUANGAN USER:\n${financialContext}\n\nPERTANYAAN USER: ${message}\n\nCATATAN: Jawab sesuai dengan konteks pertanyaan. Jika user hanya menyapa atau bertanya umum, jawab santai tanpa perlu detail analisis. Jika user minta analisis/tips spesifik, baru berikan detail lengkap.`,
               },
             ],
           },
         ],
         generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 800,
-          topP: 0.9,
-          topK: 40,
+          temperature: 1,
+          maxOutputTokens: 1000,
+          topP: 0.95,
+          topK: 64,
         },
       }),
       signal: controller.signal,
@@ -187,14 +179,24 @@ PENTING:
       });
     }
 
-    res.status(500).json({
-      error: "Internal server error",
-      message: "Failed to process your request. Please try again later.",
+    // Fallback response when API fails
+    const fallbackResponse = `Maaf, sistem AI sedang sibuk saat ini. 
+
+Namun, saya bisa memberitahu kamu kondisi keuangan saat ini:
+- Total Balance: ${formatCurrency(balance)}
+- Total Pemasukan: ${formatCurrency(totalIncome)}
+- Total Pengeluaran: ${formatCurrency(totalExpense)}
+
+Silakan coba lagi dalam beberapa saat, atau ketik pertanyaan spesifik tentang keuangan kamu!`;
+
+    res.status(200).json({
+      response: fallbackResponse,
+      isLimited: true,
     });
   }
 };
 
-// FIXED: Safe cleaning function that PRESERVES currency formatting
+// IMPROVED: Cleaning function that preserves formatting and line breaks
 const cleanAIResponse = (text) => {
   if (!text) return text;
 
@@ -204,31 +206,35 @@ const cleanAIResponse = (text) => {
   // This regex carefully avoids touching ** while removing single *
   cleaned = cleaned.replace(/(?<!\*)\*(?!\*)([^*]+?)(?<!\*)\*(?!\*)/g, "$1");
 
-  // Step 2: Clean up duplicate phrases with colons (but avoid touching numbers)
-  // Only match word characters, not numbers
+  // Step 2: Fix triple or more asterisks to double
+  cleaned = cleaned.replace(/\*{3,}/g, "**");
+
+  // Step 3: Clean up duplicate phrases with colons (but avoid touching numbers)
   cleaned = cleaned.replace(/([A-Za-z\u00C0-\u024F\s]+):\s*\1:/gi, "$1:");
 
-  // Step 3: Remove duplicate consecutive WORDS (not numbers!)
-  // Use word boundary to avoid touching currency amounts
+  // Step 4: Remove duplicate consecutive WORDS (not numbers!)
   cleaned = cleaned.replace(/\b([A-Za-z\u00C0-\u024F]+)\s+\1\b/gi, "$1");
 
-  // Step 4: Fix line breaks for bullet points
-  cleaned = cleaned.replace(/([•\-])\s*/g, "\n$1 ");
-
-  // Step 5: Remove excessive line breaks (max 2)
+  // Step 5: Preserve intentional line breaks but remove excessive ones
+  // Keep double line breaks, reduce triple+ to double
   cleaned = cleaned.replace(/\n{3,}/g, "\n\n");
 
-  // Step 6: Clean up extra spaces (but not in currency)
+  // Step 6: Clean up extra spaces (but preserve single spaces and line structure)
   cleaned = cleaned.replace(/ {2,}/g, " ");
 
-  // Step 7: Final formatting cleanup
-  cleaned = cleaned
-    .replace(/\*\*\*/g, "**") // Fix triple asterisks
-    .replace(/\(\s+/g, "(") // Fix spacing in parentheses
-    .replace(/\s+\)/g, ")")
-    .trim();
+  // Step 7: Fix spacing in parentheses
+  cleaned = cleaned.replace(/\(\s+/g, "(").replace(/\s+\)/g, ")");
 
-  return cleaned;
+  // Step 8: Ensure proper spacing after bullet points
+  cleaned = cleaned.replace(/([•\*\-])\s*/g, "$1 ");
+
+  // Step 9: Trim each line individually to remove trailing spaces
+  cleaned = cleaned
+    .split("\n")
+    .map((line) => line.trim())
+    .join("\n");
+
+  return cleaned.trim();
 };
 
 module.exports = { chatWithAI };
