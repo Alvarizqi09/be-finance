@@ -1,4 +1,4 @@
-// controllers/aiController.js - FIXED CLEANING FUNCTION
+// controllers/aiController.js - FIXED GEMINI API CONFIG
 const Income = require("../models/Income");
 const Expense = require("../models/Expense");
 
@@ -126,12 +126,10 @@ PERHATIAN: Gunakan angka Rupiah PERSIS dari data yang diberikan. Jangan ubah for
           },
         ],
         generationConfig: {
-          temperature: 1,
+          temperature: 2.0,
           maxOutputTokens: 1000,
           topP: 0.95,
           topK: 64,
-          maxTemperature: 2,
-          thinking: true,
         },
       }),
       signal: controller.signal,
