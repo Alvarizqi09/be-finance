@@ -35,13 +35,11 @@ exports.registerUser = async (req, res) => {
       minute: "2-digit",
       second: "2-digit",
     });
-    res
-      .status(201)
-      .json({
-        id: user._id,
-        user: { ...user.toObject(), createdAt: createdAtIndo },
-        token: generateToken(user._id),
-      });
+    res.status(201).json({
+      id: user._id,
+      user: { ...user.toObject(), createdAt: createdAtIndo },
+      token: generateToken(user._id),
+    });
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }
@@ -69,13 +67,11 @@ exports.loginUser = async (req, res) => {
       minute: "2-digit",
       second: "2-digit",
     });
-    res
-      .status(200)
-      .json({
-        id: user._id,
-        user: { ...user.toObject(), createdAt: createdAtIndo },
-        token: generateToken(user._id),
-      });
+    res.status(200).json({
+      id: user._id,
+      user: { ...user.toObject(), createdAt: createdAtIndo },
+      token: generateToken(user._id),
+    });
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }
@@ -101,6 +97,37 @@ exports.getUserInfo = async (req, res) => {
       .status(200)
       .json({ user: { ...user.toObject(), createdAt: createdAtIndo } });
   } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.googleCallback = async (req, res) => {
+  try {
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ message: "Authentication failed" });
+    }
+
+    // Generate token
+    const token = generateToken(user._id);
+
+    // Format createdAt ke waktu Indonesia
+    const createdAtIndo = new Date(user.createdAt).toLocaleString("id-ID", {
+      timeZone: "Asia/Jakarta",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+
+    // Redirect ke frontend dengan token
+    // Ganti URL frontend sesuai kebutuhan
+    const frontendURL = process.env.CLIENT_URL || "http://localhost:5173";
+    res.redirect(`${frontendURL}/dashboard?token=${token}&userId=${user._id}`);
+  } catch (error) {
+    console.error("Google callback error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };

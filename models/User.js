@@ -5,11 +5,13 @@ const userSchema = new mongoose.Schema(
   {
     fullName: { type: String, required: true },
     email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
+    password: { type: String },
     profileImageUrl: { type: String, default: null },
+    googleId: { type: String, unique: true, sparse: true },
   },
   { timestamps: true }
 );
+
 // Hash password before saving
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) {
