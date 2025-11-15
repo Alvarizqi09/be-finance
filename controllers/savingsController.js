@@ -189,7 +189,58 @@ exports.processAutoContributions = async () => {
         !autoContribute.nextContributionDate ||
         autoContribute.nextContributionDate <= now
       ) {
-        // Tambah kontribusi otomatis
+        // Validasi: Cek balance user sebelum auto-contribute
+        const user = await User.findById(goal.userId);
+
+        if (!user) {
+          console.warn(
+            `User not found for goal: ${goal.goalName} (${goal.userId})`
+          );
+          continue;
+        }
+
+        // Hitung balance user dari income - expense
+        const Income = require("../models/Income");
+        const Expense = require("../models/Expense");
+
+        const totalIncome = await Income.aggregate([
+          { $match: { userId: goal.userId } },
+          { $group: { _id: null, total: { $sum: "$amount" } } },
+        ]);
+
+        const totalExpense = await Expense.aggregate([
+          { $match: { userId: goal.userId } },
+          { $group: { _id: null, total: { $sum: "$amount" } } },
+        ]);
+
+        const income = totalIncome[0]?.total || 0;
+        const expense = totalExpense[0]?.total || 0;
+        const balance = income - expense;
+
+        // Check apakah balance cukup untuk auto-contribute
+        if (balance < autoContribute.amount) {
+          console.warn(
+            `Insufficient balance for auto-contribution: ${goal.goalName} (${goal.userId}). ` +
+              `Required: ${autoContribute.amount}, Available: ${balance}`
+          );
+
+          // Record failed attempt
+          goal.contributions.push({
+            amount: 0,
+            type: "auto",
+            date: new Date(),
+            note: `Auto-contribution FAILED - Insufficient balance. Required: ${autoContribute.amount}, Available: ${balance}`,
+          });
+
+          // Update next contribution date untuk coba lagi besok
+          goal.autoContribute.nextContributionDate =
+            calculateNextContributionDate(autoContribute.frequency);
+
+          await goal.save();
+          continue;
+        }
+
+        // ✅ Balance cukup, proses kontribusi
         goal.currentAmount += autoContribute.amount;
 
         // Jika sudah mencapai target
@@ -214,7 +265,7 @@ exports.processAutoContributions = async () => {
         await goal.save();
 
         console.log(
-          `Auto-contribution processed for goal: ${goal.goalName} (${goal.userId})`
+          `✅ Auto-contribution SUCCESS: ${goal.goalName} (${goal.userId}) - Amount: ${autoContribute.amount}`
         );
       }
     }
