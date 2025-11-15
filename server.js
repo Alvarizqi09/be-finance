@@ -8,11 +8,13 @@ const app = express();
 const path = require("path");
 
 const connectDB = require("./config/db");
+const { scheduleAutoContributions } = require("./config/scheduler");
 const authRoutes = require("./routes/authRoutes");
 const incomeRoutes = require("./routes/incomeRoutes");
 const expenseRoutes = require("./routes/expenseRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const aiRoutes = require("./routes/aiRoutes");
+const savingsRoutes = require("./routes/savingsRoutes");
 
 app.use(
   cors({
@@ -47,11 +49,15 @@ const PORT = process.env.PORT || 5000;
 
 connectDB();
 
+// Initialize cron scheduler untuk auto-contributions
+scheduleAutoContributions();
+
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/income", incomeRoutes);
 app.use("/api/v1/expense", expenseRoutes);
 app.use("/api/v1/dashboard", dashboardRoutes);
-app.use("/api/v1/ai", aiRoutes); // TAMBAHKAN INI
+app.use("/api/v1/ai", aiRoutes);
+app.use("/api/v1/savings", savingsRoutes);
 
 app.get("/", (req, res) => {
   res.json({ message: "Server is running" });
